@@ -30,7 +30,7 @@ module.exports = {
     let queryArgs = []
 
     for (key in params) {
-      if (-1 === POSSIBLE_KEYS.indexOf(key)) {
+      if (-1 !== POSSIBLE_KEYS.indexOf(key)) {
         queryArgs.push(`${key} = ?`)
         dbArgs.push(params[key])
       }
@@ -50,7 +50,22 @@ module.exports = {
     let query = 'UPDATE users SET ' + queryArgs.join(', ') + ' WHERE rowid = ?'
 
     //db.run.apply(db, query, dbArgs)
-    return db.run(db, dbArgs)
+    return db.run(query, dbArgs).then((stmt) => {
+      // Ici je vais vérifier si l'updata a bien changé une ligne en base
+      // Dans le cas contraire, cela voudra dire qu'il n'y avait pas d'utilisateur
+      // Avec db.run, la paramètre passé dans le callback du then, est le `statement`
+      // qui contiendra le nombre de lignes éditées en base
+
+      // Si le nombre de lignes dans la table mis à jour est de 0
+      if (stmt.changes === 0) {
+        let err = new Error('Not Found')
+        err.status = 404
+        return Promise.reject(err)
+      }
+
+      // Tout va bien, on retourne le stmt au prochain then, on fait comme si de rien n'était
+      return stmt
+    })
   },
 
   remove: (userId) => {
