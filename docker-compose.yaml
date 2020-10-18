@@ -1,0 +1,33 @@
+version: "3.7"
+
+services:
+  app-skeleton:
+    build: .
+    environment:
+      PORT: 8080
+      NODE_ENV: development
+    volumes:
+      - ./bdd.db:/app/bdd.db
+    expose:
+      - "8080"
+    networks:
+      - my-network
+    deploy:
+      replicas: 3
+
+  haproxy:
+    image: dockercloud/haproxy:latest
+    restart: on-failure
+    ports:
+      - "80:80"
+    depends_on:
+      - app-skeleton
+    networks:
+      - my-network
+    links:
+      - app-skeleton
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  my-network:
